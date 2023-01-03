@@ -4,8 +4,6 @@ import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.srv.ConnectionHandler;
 import bgu.spl.net.srv.Connections;
-import bgu.spl.net.srv.Server;
-
 import java.util.HashMap;;
 
 public class Stomp_Protocol<T> implements StompMessagingProtocol<String>,MessagingProtocol<String>{
@@ -23,23 +21,24 @@ public void start(int connectionId, Connections<String> connections) {
 public void process(String message) {
     // TODO Auto-generated method stub
 
-    String[] split=message.split(" ");
-       
+    String[] split=message.split("\n");
+      
+    Frame frame=new Frame(split);
 
-    if(split[0].equals(constants.connect)){
-        Connect();
+    if(frame.command.equals(constants.connect)){
+        frame.Connect();
     }
-    else if(split[0].equals(constants.subscribe)){
-       Subscribe();
+    else if(frame.command.equals(constants.subscribe)){
+       frame.Subscribe();
     }
-    else if(split[0].equals(constants.send)){
-        Send();
+    else if(frame.command.equals(constants.send)){
+        frame.Send();
      }
-     else if(split[0].equals(constants.unSubscribe)){
-        unSubscribe();
+     else if(frame.command.equals(constants.unSubscribe)){
+        frame.unSubscribe();
      }
-     else if(split[0].equals(constants.disconnect)){
-        Disconnect();
+     else if(frame.command.equals(constants.disconnect)){
+        frame.Disconnect();
      }
      
 
@@ -89,7 +88,23 @@ public class Frame{
        head=head+"\n\n";
        return command+"\n"+head+body+"\n"+"^@";
    }
-   
+    //disconnect
+    public void Disconnect() {
+    }
+    //unSubscribbe
+    public void unSubscribe() {
+    }
+    //send
+    public void Send() {
+    }
+    //connect
+    public void Connect(){
+       
+    }
+    //subscribe
+    public void Subscribe(){
+
+    }
     
 }
 public class constants{
@@ -98,23 +113,6 @@ public class constants{
     public static final String disconnect="Disconnect";
     public static final String unSubscribe="UnSubscribe";
     public static final String send="Send";
-}
- //disconnect
- public void Disconnect() {
-}
-//unSubscribbe
-public void unSubscribe() {
-}
-//send
-public void Send() {
-}
-//connect
-public void Connect(){
-   
-}
-//subscribe
-public void Subscribe(){
-
 }
     
 
