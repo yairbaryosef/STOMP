@@ -7,10 +7,7 @@ import bgu.spl.net.srv.Connections;
 import java.util.HashMap;;
 
 public class Stomp_Protocol<T> implements StompMessagingProtocol<String>,MessagingProtocol<String>{
-   //map between user id to connection id
-    HashMap<Integer,Integer> maping_userId_to_connectionId;
-  //map between connection id to connection handler
-  HashMap<Integer,ConnectionHandler> maping_connectionId_to_socket;
+  private Connections_imp<String> connections;
 @Override
 public void start(int connectionId, Connections<String> connections) {
     // TODO Auto-generated method stub
@@ -26,20 +23,21 @@ public void process(String message) {
     Frame frame=new Frame(split);
 
     if(frame.command.equals(constants.connect)){
-        frame.Connect();
+      Connect(frame);
     }
     else if(frame.command.equals(constants.subscribe)){
-       frame.Subscribe();
+       Subscribe();
     }
     else if(frame.command.equals(constants.send)){
-        frame.Send();
+        Send();
      }
      else if(frame.command.equals(constants.unSubscribe)){
-        frame.unSubscribe();
+        unSubscribe();
      }
      else if(frame.command.equals(constants.disconnect)){
-        frame.Disconnect();
+       Disconnect();
      }
+
      
 
 
@@ -57,7 +55,9 @@ public class Frame{
     public HashMap<String,String> headers;
  
     public  String body;
-
+    public Frame(){
+        headers=new HashMap<>();
+    }
     public Frame(String[] message ){
         //init command
         command=message[0];
@@ -88,34 +88,65 @@ public class Frame{
        head=head+"\n\n";
        return command+"\n"+head+body+"\n"+"^@";
    }
-    //disconnect
-    public void Disconnect() {
-    }
-    //unSubscribbe
-    public void unSubscribe() {
-    }
-    //send
-    public void Send() {
-    }
-    //connect
-    public void Connect(){
-       
-    }
-    //subscribe
-    public void Subscribe(){
-
-    }
+    
     
 }
 public class constants{
     public static final String connect="Connect";
+    public static final String connected="Connected";
     public static final String subscribe="Subscribe";
     public static final String disconnect="Disconnect";
     public static final String unSubscribe="UnSubscribe";
     public static final String send="Send";
-}
-    
+    public static final String version="version";
+    public static final String recipt="RECEIPT";
 
+}
+    public Connections_imp<String> getConnections() {
+        return connections;
+    }
+@Override
+public void setConnections(Connections_imp<String> connections) {
+    // TODO Auto-generated method stub
+    this.connections=connections;
+}
+//disconnect
+public String Disconnect() {
+    return null;
+}
+//unSubscribbe
+public String unSubscribe() {
+    return null;
+}
+//send
+public String Send() {
+    return null;
+}
+//connect
+public String Connect(Frame msg){
+    Frame frame=new Frame();
+    frame.command=constants.connected;
+    frame.headers.put(constants.version, "1.2");
+    connections.send(connections.maping_connectionId_to_socket.size(), frame.toString());
+    return null;
+   
+}
+//subscribe
+public String Subscribe(){
+    return null;
+
+}
+
+//recipt messsage
+public String reciept(int connectionId){
+   Frame frame=new Frame();
+   frame.command=constants.recipt;
+
+   frame.headers.put("receipt - id",String.valueOf(connectionId));
+   return frame.toString();
+
+
+}
     
     
 }

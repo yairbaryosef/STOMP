@@ -50,7 +50,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                         T nextMessage = encdec.decodeNextByte(buf.get());
                         if (nextMessage != null) {
                             protocol.process(nextMessage);
-                        /*    T response = protocol.process(nextMessage);
+                            /*T response = protocol.process(nextMessage);
                             if (response != null) {
                                 writeQueue.add(ByteBuffer.wrap(encdec.encode(response)));
                                 reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);

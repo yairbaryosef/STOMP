@@ -5,7 +5,7 @@ import bgu.spl.net.impl.stomp.Implements.Stomp_Protocol.Frame;
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 
-public class STOMP_encoder_decoder implements MessageEncoderDecoder<Serializable>{
+public class STOMP_encoder_decoder implements MessageEncoderDecoder<String>{
 
     @Override
     public String decodeNextByte(byte nextByte) {
@@ -17,11 +17,10 @@ public class STOMP_encoder_decoder implements MessageEncoderDecoder<Serializable
     }
 
     @Override
-    public byte[] encode(Serializable message) {
+    public byte[] encode(String message) {
         // TODO Auto-generated method stub
-        Stomp_Protocol.Frame frame= new Frame(message.split("\n"));
-        return serializeObject(frame);
-        return null;
+        return message.getBytes();
+        
     }
     
 }
