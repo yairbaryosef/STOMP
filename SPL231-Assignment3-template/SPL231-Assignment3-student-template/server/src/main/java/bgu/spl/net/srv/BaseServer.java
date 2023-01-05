@@ -3,11 +3,13 @@ package bgu.spl.net.srv;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.impl.stomp.Implements.Connections_imp;
+import bgu.spl.net.impl.stomp.Implements.Stomp_Protocol;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.function.Supplier;
+import bgu.spl.net.impl.stomp.Implements.Stomp_Protocol;
 
 public abstract class BaseServer<T> implements Server<T> {
 
@@ -27,8 +29,11 @@ public abstract class BaseServer<T> implements Server<T> {
         this.protocolFactory = protocolFactory;
         this.encdecFactory = encdecFactory;
 		this.sock = null;
+
+        //added
         connections=new Connections_imp();
         protocolFactory.get().setConnections(connections);
+        //
     }
 
     @Override
@@ -49,6 +54,14 @@ public abstract class BaseServer<T> implements Server<T> {
                         protocolFactory.get());
 
                 execute(handler);
+
+                //added
+                connections.maping_connectionId_to_socket.put(connections.connectionId, handler);
+                Stomp_Protocol stomp= (Stomp_Protocol)  handler.getProtocol();
+                stomp.connectionId=connections.connectionId;
+                connections.connectionId++;
+                //
+
             }
         } catch (IOException ex) {
         }

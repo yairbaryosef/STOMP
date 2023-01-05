@@ -10,8 +10,9 @@ import java.util.HashMap;
 
 import org.w3c.dom.events.Event;;
 
-public class Stomp_Protocol<T> implements StompMessagingProtocol<String>,MessagingProtocol<String>{
-  private Connections_imp<String> connections;
+public class Stomp_Protocol implements StompMessagingProtocol<String>,MessagingProtocol<String>{
+  public Connections_imp<String> connections;
+  public int connectionId=-1;
 @Override
 public void start(int connectionId, Connections<String> connections) {
     // TODO Auto-generated method stub
@@ -35,7 +36,7 @@ public void process(String message) {
         Send(frame);
      }
      else if(frame.command.equals(constants.unSubscribe)){
-        unSubscribe();
+        unSubscribe(frame);
      }
      else if(frame.command.equals(constants.disconnect)){
        Disconnect(frame);
@@ -61,6 +62,7 @@ public class Frame{
     public  String body;
     public Frame(){
         headers=new HashMap<>();
+        body="";
         
     }
     public Frame(String[] message ){
@@ -86,7 +88,7 @@ public class Frame{
         //init body
         body="";
         while(!message[i].equals("^@")){
-            System.out.println(message[i]);
+            
             body=body+message[i]+" \n";
             i++;
         }
@@ -102,7 +104,7 @@ public class Frame{
       head=head+key+":"+headers.get(key)+"\n";
        }
        
-       head=head+"";
+       
        String b="";
        if(body!=null){
         b=body;
@@ -155,26 +157,77 @@ public String Disconnect(Frame frame) {
      */
     //get connectionid by the recipt
     int id=Integer.valueOf(frame.headers.get(constants.receipt_id));
-    connections.send(id, create_reciept(id));
+    connections.send(connectionId, create_reciept(connectionId));
+
+    //TODO: UPDATE MAPS
+
     connections.disconnect(id);
     return null;
 }
 //unSubscribbe
-public String unSubscribe() {
+public String unSubscribe(Frame frame) {
+
+    // GET SUBSCRIPTION ID 
+     int subscriptionId=Integer.valueOf(frame.headers.get("id"));
+
+     //CHECK IF THE SUBSCRIPTION ID EXIST
+     boolean isExist=false;
+     if(connections.get_All_CLIENT_TOPICS.get(connectionId)==null){
+        String error="UNSUBSCRIBE TO UNSIGNED TOPIC";
+        connections.send(connectionId, create_Error(frame,error));
+          return null;
+     }
+     
+     for(String topic:connections.get_All_CLIENT_TOPICS.get(connectionId).keySet()){
+                if(connections.get_All_CLIENT_TOPICS.get(connectionId).get(topic)==subscriptionId){
+                 //remove client from topic
+                  connections.games_channel_to_ConnectionId.get(topic).remove(connectionId);
+                  
+                  //remove subscriptionID
+                  connections.get_All_CLIENT_TOPICS.get(connectionId).remove(topic);
+
+                  isExist=true;
+                }
+     }
+     if(isExist){
+        //send receipt
+        connections.send(connectionId, create_reciept(connectionId));
+     }
+     else{
+        //send error
+        String error="UNSUBSCRIBE TO UNSIGNED TOPIC";
+        connections.send(connectionId, create_Error(frame,error));
+     }
     return null;
 }
 //send
 public String Send(Frame frame) {
-   String game= frame.headers.get("destination");
-   
- 
-   connections.send(game, Message());
+    //get game name
+   String topic= frame.headers.get("destination");
+   //send event to all clients
+   for(Integer connectioId:connections.games_channel_to_ConnectionId.get(topic)){
+      connections.send(connectionId, create_Message(frame,connectionId));
+      System.out.println(create_Message(frame,connectionId));
+   }
    return null;
 }
 
 //Meesage frame
-public String Message(){
+public String create_Message(Frame client_frame,int connection){
     Frame frame=new Frame();
+
+    //command
+    frame.command="MESSAGE";
+
+    //headers
+    int subscription=connections.get_All_CLIENT_TOPICS.get(connection).get(client_frame.headers.get("destination"));
+    frame.headers.put("subscription", String.valueOf(subscription));
+    frame.headers.put("message-id", String.valueOf(connections.count_Messages));
+    connections.count_Messages++;
+    frame.headers.put("destination", client_frame.headers.get("destination"));
+
+    frame.body=client_frame.body;
+    
     return frame.toString();
 }
 //connect
@@ -182,8 +235,9 @@ public String Connect(Frame msg){
     Frame frame=new Frame();
     frame.command=constants.connected;
     frame.headers.put(constants.version, "1.2");
-    connections.send(connections.maping_connectionId_to_socket.size(), frame.toString());
-    return null;
+    connections.send(connectionId, frame.toString());
+    System.out.println(frame.toString());
+    return frame.toString();
    
 }
 //subscribe
@@ -196,54 +250,72 @@ public String Subscribe(Frame frame){
      * 
      * ^@
      */
+    HashMap<String,Integer> topics;
+    
+    topics=connections.get_All_CLIENT_TOPICS.get(connectionId);
+    
+    if(topics==null){
+        topics=new HashMap<>();
+    }
+    
+    if(is_legal_Subscribe_Frame(frame)){
+    String game_name=frame.headers.get("destination");
+     if(!connections.games_channel_to_ConnectionId.containsKey(game_name)){//if game DOESN'T EXIST
+           connections.games_channel_to_ConnectionId.put(game_name,new ArrayList<>());//insert game
+           
+    }
    
-     if(!connections.games_channel_to_subscriptionsId.containsKey(frame.headers.get("destination"))){//if game DOESN'T EXIST
-        //init new game
-          
-           String game_name=frame.headers.get("destination");
+   //TODO: add receipt to client frame 
+    int subscriptionid=Integer.valueOf(frame.headers.get("id"));
+    //create new topic to the client
+   
+    topics.put( game_name,subscriptionid);
+    connections.get_All_CLIENT_TOPICS.put(connectionId, topics);
+    connections.games_channel_to_ConnectionId.get(game_name).add(connectionId);
+    connections.send(connectionId, create_reciept(connectionId));//send to client receipt
+    System.out.println(connections.games_channel_to_ConnectionId);
+}
+else{
+    //return error frame
+     String errorMessage="client already subscribed to this topic";
+    connections.send(connectionId, create_Error(frame,errorMessage));
+    System.out.println(create_Error(frame,errorMessage));
+    
+}System.out.println(connections.get_All_CLIENT_TOPICS);
+System.out.println(connections.games_channel_to_ConnectionId);
 
-           connections.games_channel_to_subscriptionsId.put(game_name,new ArrayList<>());//insert game
-           
-         //maping between subscription to connectionid
-
-           int connectionid=Integer.valueOf(frame.headers.get("receipt"));//TODO: add receipt to client frame 
-           int subscriptionid=Integer.valueOf(frame.headers.get("id"));
-           connections.maping_subscriptionsId_to_connectionId.put(subscriptionid, connectionid);
-           connections.games_channel_to_subscriptionsId.get(game_name).add(subscriptionid);
-           connections.subscriptionid++;
-            
-
-          
-       
-
-          connections.send(connectionid, create_reciept(connectionid));//send to client receipt
-    }
-    else if(connections.games_channel_to_subscriptionsId.get(frame.headers.get("destination")).contains(frame.headers.get("id"))){//if game  EXIST
-        //get exist game
-        String game_name=frame.headers.get("destination");
-
-           
-           
-         //maping between subscription to connectionid
-
-           int connectionid=Integer.valueOf(frame.headers.get("receipt"));//TODO: add receipt to client frame 
-           connections.maping_subscriptionsId_to_connectionId.put(connections.subscriptionid, connectionid);
-           connections.games_channel_to_subscriptionsId.get(game_name).add(connections.subscriptionid);
-           connections.subscriptionid++;
-            
-
-          
-       
-
-          connections.send(connectionid, create_reciept(connectionid));//send to client receipt
-    }
-    else{
-
-    }
     return null;
 
-}
 
+}
+//return error string
+public String create_Error(Frame frame,String errorMessage){
+    /*
+     * RECEIPT
+     * receipt-id:id
+     * 
+     * ^@
+     */
+   Frame error=new Frame();
+   //command 
+   error.command="ERROR";
+   //headers
+   error.headers.put("receipt-id", String.valueOf(connectionId));
+   error.headers.put("message", "malformed frame received");
+   //body
+   error.body="The message :\n-----\n"+frame.toString()+"\n-----\n"+errorMessage+"\n";
+   return error.toString();
+
+
+}
+//check if the frame is valid
+private boolean is_legal_Subscribe_Frame(Frame frame) {
+   
+    if((connections.get_All_CLIENT_TOPICS.get(connectionId)!=null)&&connections.get_All_CLIENT_TOPICS.get(connectionId).containsKey(frame.headers.get("destination"))){
+            return false;
+    }
+    return true;
+}
 //recipt messsage
 public String create_reciept(int connectionId){
     /*
@@ -261,5 +333,10 @@ public String create_reciept(int connectionId){
 
 }
 
-   
+  public Frame gFrame(){
+    return new Frame();
+  } 
+  public Frame string_array_frame(String[] array){
+    return new Frame(array);
+  }
 }
