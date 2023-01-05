@@ -5,26 +5,36 @@ import java.util.List;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+
+
 import bgu.spl.net.srv.ConnectionHandler;
 import bgu.spl.net.srv.Connections;
 
-public class Connections_imp<T> implements Connections{
+public class Connections_imp<T> implements Connections<T>{
      //map between user id to connection id
-     HashMap<Integer,Integer> maping_userId_to_connectionId;
+    public HashMap<Integer,Integer> maping_subscriptionsId_to_connectionId;
      //map between connection id to connection handler
-     HashMap<Integer,ConnectionHandler> maping_connectionId_to_socket;
-     //map between topic to all subscriptions
-     HashMap<String,ArrayList<Integer>> maping_between_topics_to_subscrip;
-     HashMap<Integer,String> maping_between_subsciptionid_to_topic;
+    public HashMap<Integer,ConnectionHandler> maping_connectionId_to_socket;
+     
+     //map between subid to tpic
+     public HashMap<Integer,String> maping_between_subsciptionid_to_topic;
+
+     //counters for connectionid and subscriptionid
+     public int connectionId=0;
+     public int subscriptionid=0;
+     //Game events
+     public HashMap<String,ArrayList<Integer>> games_channel_to_subscriptionsId;
    public Connections_imp(){
     maping_connectionId_to_socket=new HashMap<>();
-    maping_userId_to_connectionId=new HashMap<>();
-    maping_between_topics_to_subscrip=new HashMap<>();
+    maping_subscriptionsId_to_connectionId=new HashMap<>();
+    games_channel_to_subscriptionsId=new HashMap<>();
     maping_between_subsciptionid_to_topic=new HashMap<>();
+   
 }
-
+   
     @Override
-    public boolean send(int connectionId, Object msg) {
+    public boolean send(int connectionId, T msg) {
         // TODO Auto-generated method stub
          try{
             maping_connectionId_to_socket.get(connectionId).send(msg);
@@ -40,7 +50,7 @@ public class Connections_imp<T> implements Connections{
     }
 
     @Override
-    public void send(String channel, Object msg) {
+    public void send(String channel, T msg) {
         // TODO Auto-generated method stub
 
         //get the clients that subscirbe to the channel and send them the msg
