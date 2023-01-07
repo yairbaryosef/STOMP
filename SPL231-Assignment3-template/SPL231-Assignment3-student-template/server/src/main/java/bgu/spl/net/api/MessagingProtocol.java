@@ -1,5 +1,7 @@
 package bgu.spl.net.api;
 
+import bgu.spl.net.impl.stomp.Implements.Connections_imp;;
+
 public interface MessagingProtocol<T> {
  
     /**
@@ -13,5 +15,7 @@ public interface MessagingProtocol<T> {
      * @return true if the connection should be terminated
      */
     boolean shouldTerminate();
+
+    public void setConnections(Connections_imp<T> connections);
  
 }

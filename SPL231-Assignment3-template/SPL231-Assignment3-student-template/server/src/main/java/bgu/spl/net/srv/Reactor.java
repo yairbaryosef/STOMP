@@ -9,8 +9,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import bgu.spl.net.impl.stomp.Implements.Stomp_Protocol;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
+import bgu.spl.net.impl.stomp.Implements.Connections_imp;;
 
 public class Reactor<T> implements Server<T> {
 
@@ -22,7 +24,10 @@ public class Reactor<T> implements Server<T> {
 
     private Thread selectorThread;
     private final ConcurrentLinkedQueue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
-
+    //added
+    Connections_imp<T> connections;
+    
+    //
     public Reactor(
             int numThreads,
             int port,
@@ -33,6 +38,10 @@ public class Reactor<T> implements Server<T> {
         this.port = port;
         this.protocolFactory = protocolFactory;
         this.readerFactory = readerFactory;
+        //added
+        connections=new Connections_imp();
+        protocolFactory.get().setConnections(connections);
+        //
     }
 
     @Override
@@ -101,6 +110,12 @@ public class Reactor<T> implements Server<T> {
                 clientChan,
                 this);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
+        //added
+        connections.maping_connectionId_to_socket.put(connections.connectionId, handler);
+        Stomp_Protocol stomp= (Stomp_Protocol)  handler.getProtocol();
+         stomp.connectionId=connections.connectionId;
+        connections.connectionId++;
+        //
     }
 
     private void handleReadWrite(SelectionKey key) {

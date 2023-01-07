@@ -1,6 +1,8 @@
 package bgu.spl.net.impl.echo;
 
 import bgu.spl.net.api.MessagingProtocol;
+import bgu.spl.net.impl.stomp.Implements.Connections_imp;
+
 import java.time.LocalDateTime;
 
 public class EchoProtocol implements MessagingProtocol<String> {
@@ -11,7 +13,7 @@ public class EchoProtocol implements MessagingProtocol<String> {
     public void process(String msg) {
         shouldTerminate = "bye".equals(msg);
         System.out.println("[" + LocalDateTime.now() + "]: " + msg);
-        //return createEcho(msg);
+       // return createEcho(msg);
     }
 
     private String createEcho(String message) {
@@ -22,5 +24,10 @@ public class EchoProtocol implements MessagingProtocol<String> {
     @Override
     public boolean shouldTerminate() {
         return shouldTerminate;
+    }
+    @Override
+    public void setConnections(Connections_imp<String> connections) {
+        // TODO Auto-generated method stub
+        
     }
 }
